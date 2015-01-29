@@ -36,4 +36,3 @@ KOS()
 	
 	/* not reached .. */
 }
-test
