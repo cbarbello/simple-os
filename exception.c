@@ -42,6 +42,14 @@ exceptionHandler(ExceptionType which)
 			DEBUG('e', "_exit() system call\n");
 			printf("Program exited with value %d.\n", r5);
 			SYSHalt();
+		case SYS_write:
+			kt_fork(WriteCall, (void*)pcb);
+			DEBUG('e', "SYS_write system call\n");
+			break;
+		case SYS_read:
+			kt_fork(ReadCall, (void*)pcb);
+			DEBUG('e', "SYS_read system call\n");
+			break;
 		default:
 			DEBUG('e', "Unknown system call\n");
 			SYSHalt();
@@ -67,7 +75,7 @@ exceptionHandler(ExceptionType which)
 		printf("Unexpected user mode exception %d %d\n", which, type);
 		exit(1);
 	}
-	noop();
+	Scheduler();
 }
 
 void
@@ -87,4 +95,5 @@ interruptHandler(IntType which)
 		noop();
 		break;
 	}
+	Scheduler();
 }
