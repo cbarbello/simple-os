@@ -4,8 +4,18 @@
 #ifdef INIT_GLOBALS
 #define EXTERN
 #else
-#define EXTERN EXTERN
+#define EXTERN extern
 #endif
 
-EXTERN Dllist* readyq;
+#include "simulator.h"
+#include "dllist.h"
+#include "scheduler.h"
+
+typedef struct {
+	int regs[NumTotalRegs];
+} PCB;
+
+EXTERN Dllist readyq;
 EXTERN PCB* currentRunningProcess;
+
+#endif

@@ -9,6 +9,11 @@
  */
 
 #include "simulator.h"
+#include "kos.h"
+#include "scheduler.h"
+#include "syscall.h"
+
+#include <stdlib.h>
 
 void
 exceptionHandler(ExceptionType which)
@@ -23,11 +28,18 @@ exceptionHandler(ExceptionType which)
 	r7 = buf[7];
 	newPC = buf[NextPCReg];
 
+	//printf("%d\n", type);
 	/*
 	 * for system calls type is in r4, arg1 is in r5, arg2 is in r6, and
 	 * arg3 is in r7 put result in r2 and don't forget to increment the
 	 * pc before returning!
 	 */
+
+	if (currentRunningProcess != NULL){
+		currentRunningProcess->regs[5] = r5;
+		currentRunningProcess->regs[6] = r6;
+		currentRunningProcess->regs[7] = r7;
+	}
 
 	switch (which) {
 	case SyscallException:
@@ -43,13 +55,15 @@ exceptionHandler(ExceptionType which)
 			printf("Program exited with value %d.\n", r5);
 			SYSHalt();
 		case SYS_write:
-			kt_fork(WriteCall, (void*)pcb);
-			DEBUG('e', "SYS_write system call\n");
-			break;
+			//printf("writing\n");
+			kt_fork(WriteCall, currentRunningProcess);
+		 	DEBUG('e', "SYS_write system call\n");
+		 	break;
 		case SYS_read:
-			kt_fork(ReadCall, (void*)pcb);
-			DEBUG('e', "SYS_read system call\n");
-			break;
+			//printf("reading\n");
+		 	kt_fork(ReadCall, currentRunningProcess);
+		 	DEBUG('e', "SYS_read system call\n");
+		 	break;
 		default:
 			DEBUG('e', "Unknown system call\n");
 			SYSHalt();
@@ -75,6 +89,7 @@ exceptionHandler(ExceptionType which)
 		printf("Unexpected user mode exception %d %d\n", which, type);
 		exit(1);
 	}
+	//kt_joinall();
 	Scheduler();
 }
 
@@ -84,16 +99,20 @@ interruptHandler(IntType which)
 	switch (which) {
 	case ConsoleReadInt:
 		DEBUG('e', "ConsoleReadInt interrupt\n");
-		noop();
+		//noop();
 		break;
 	case ConsoleWriteInt:
 		DEBUG('e', "ConsoleWriteInt interrupt\n");
-		noop();
+		//noop();
 		break;
 	default:
 		DEBUG('e', "Unknown interrupt\n");
-		noop();
+		//noop();
 		break;
 	}
+
+	if (currentRunningProcess != NULL)
+		dll_append(readyq, new_jval_v((void*)(currentRunningProcess)));
+	
 	Scheduler();
 }

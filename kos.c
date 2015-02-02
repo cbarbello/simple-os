@@ -1,17 +1,14 @@
 /*
- * kos.c -- starting point for student's os.
+ * jos.c -- starting point for student's os.
  * 
  */
 
-#include "simulator.h"
 #include <stdlib.h>
 
 #define INIT_GLOBALS
 #include "kos.h"
 
-
 void initialize_user_process(char *filename) {
-	int registers[NumTotalRegs];
 	int i;
 	int argc = 0;
 
@@ -21,39 +18,38 @@ void initialize_user_process(char *filename) {
 	}
 	load_user_program(filename);
 
-	PCB *pcb = (PCB)malloc(sizeof(PCB));
+	PCB *pcb = (PCB*)malloc(sizeof(PCB));
 
 	for (i=0; i < NumTotalRegs; i++)
-		registers[i] = 0;
+		pcb->regs[i] = 0;
 
 	/* set up the program counters and the stack register */
-	registers[PCReg] = 0;
-	registers[NextPCReg] = 4;
-	registers[StackReg] = MemorySize - 24;
+	pcb->regs[PCReg] = 0;
+	pcb->regs[NextPCReg] = 4;
+	pcb->regs[StackReg] = MemorySize - 24;
 
 	for (i = 0; kos_argv[i] != NULL; i++)
 		argc++;
 
-	if (argc > 1) {
-		registers[5] = atoi(kos_argv[1]);
-	}
-	if (argc > 2) {
-		registers[6] = atoi(kos_argv[2]);
-	}
-	if (argc > 3) {
-		registers[7] = atpo(kos_argv[3]);
-	}
-	if (argc > 4) {
-		free(pcb);
-		fprintf(stderr, "Too many arguments.\n");
-		exit(1);
-	}
-	pcb->registers = registers;
+	// if (argc > 1) {
+	// 	registers[5] = atoi(kos_argv[1]);
+	// }
+	// if (argc > 2) {
+	// 	registers[6] = atoi(kos_argv[2]);
+	// }
+	// if (argc > 3) {
+	// 	registers[7] = atoi(kos_argv[3]);
+	// }
+	// if (argc > 4) {
+	// 	free(pcb);
+	// 	fprintf(stderr, "Too many arguments.\n");
+	// 	exit(1);
+	//}
 
-	main_memory[StackReg + 12] = argc;
-	main_memory[StackReg + 16] = kos_argv;
+	//main_memory[StackReg + 12] = argc;
+	//main_memory[StackReg + 16] = kos_argv;
 	
-	dll_append(readyq, (void*)(pcb));
+	dll_append(readyq, new_jval_v((void*)(pcb)));
 	kt_exit();
 }
 
@@ -61,8 +57,12 @@ void initialize_semaphores() {
 	kt_exit();
 }
 
-KOS() 
-{	
+void console_buf_read() {
+	kt_exit();
+}
+
+KOS()
+{
 	bzero(main_memory, MemorySize);
 	readyq = new_dllist();
 
@@ -73,8 +73,3 @@ KOS()
 
 	Scheduler();
 }
-
-typedef struct pcb {
-	int* registers;
-} *PCB;
-
