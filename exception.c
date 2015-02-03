@@ -18,7 +18,7 @@
 void
 exceptionHandler(ExceptionType which)
 {
-	int             type, r5, r6, r7, newPC;
+	int             i, type, r5, r6, r7, newPC;
 	int             buf[NumTotalRegs];
 
 	examine_registers(buf);
@@ -35,10 +35,8 @@ exceptionHandler(ExceptionType which)
 	 * pc before returning!
 	 */
 
-	if (currentRunningProcess != NULL){
-		currentRunningProcess->regs[5] = r5;
-		currentRunningProcess->regs[6] = r6;
-		currentRunningProcess->regs[7] = r7;
+	for (i=0; i<NumTotalRegs; i++){
+		currentRunningProcess->regs[i] = buf[i];
 	}
 
 	switch (which) {
@@ -55,13 +53,11 @@ exceptionHandler(ExceptionType which)
 			printf("Program exited with value %d.\n", r5);
 			SYSHalt();
 		case SYS_write:
-			//printf("writing\n");
-			kt_fork(WriteCall, currentRunningProcess);
+			kt_fork((void*(*)(void *))WriteCall, currentRunningProcess);
 		 	DEBUG('e', "SYS_write system call\n");
 		 	break;
 		case SYS_read:
-			//printf("reading\n");
-		 	kt_fork(ReadCall, currentRunningProcess);
+		 	kt_fork((void*(*)(void *))ReadCall, currentRunningProcess);
 		 	DEBUG('e', "SYS_read system call\n");
 		 	break;
 		default:
@@ -89,30 +85,33 @@ exceptionHandler(ExceptionType which)
 		printf("Unexpected user mode exception %d %d\n", which, type);
 		exit(1);
 	}
-	//kt_joinall();
+
 	Scheduler();
 }
 
 void
 interruptHandler(IntType which)
 {
+	// int buf[NumTotalRegs];
+	// int i;
+
 	switch (which) {
 	case ConsoleReadInt:
 		DEBUG('e', "ConsoleReadInt interrupt\n");
-		//noop();
 		break;
 	case ConsoleWriteInt:
+		V_kt_sem(writeok);
 		DEBUG('e', "ConsoleWriteInt interrupt\n");
-		//noop();
 		break;
 	default:
 		DEBUG('e', "Unknown interrupt\n");
-		//noop();
 		break;
 	}
 
-	if (currentRunningProcess != NULL)
-		dll_append(readyq, new_jval_v((void*)(currentRunningProcess)));
-	
+	if (currentRunningProcess != NULL) {
+		examine_registers(currentRunningProcess->regs);
+		dll_prepend(readyq, new_jval_v((void*)(currentRunningProcess)));
+	}
+
 	Scheduler();
 }

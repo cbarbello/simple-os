@@ -6,7 +6,10 @@
 #include <stdlib.h>
 
 #define INIT_GLOBALS
+#include "simulator.h"
 #include "kos.h"
+#include "errno.h"
+#include "kt.h"
 
 void initialize_user_process(char *filename) {
 	int i;
@@ -54,6 +57,9 @@ void initialize_user_process(char *filename) {
 }
 
 void initialize_semaphores() {
+	writeok = make_kt_sem(0);
+	writers = make_kt_sem(1);
+	readers = make_kt_sem(1);
 	kt_exit();
 }
 
@@ -66,9 +72,9 @@ KOS()
 	bzero(main_memory, MemorySize);
 	readyq = new_dllist();
 
-	kt_fork(initialize_user_process, kos_argv[0]);
-	kt_fork(initialize_semaphores);
-	kt_fork(console_buf_read);
+	kt_fork((void*(*)(void *))initialize_user_process, kos_argv[0]);
+	kt_fork((void*(*)(void *))initialize_semaphores, NULL);
+	kt_fork((void*(*)(void *))console_buf_read, NULL);
 	kt_joinall();
 
 	Scheduler();

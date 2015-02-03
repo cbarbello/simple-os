@@ -7,17 +7,18 @@
 #include <stdlib.h>
 
 void Scheduler() {
-	Jval jval = dll_first(readyq)->val;
-	PCB* pcb = (PCB*)jval.v;
-
+	kt_joinall();
 	if (dll_empty(readyq)) {
 		currentRunningProcess = NULL;		
 		noop();
 	}
 	else {
+		Jval jval = dll_first(readyq)->val;
+		PCB* pcb = (PCB*)jval.v;
 		currentRunningProcess = pcb;
-		printf("Running user code.\n");
+		//printf("Running user code.\n");
 		dll_delete_node(dll_first(readyq));
-		run_user_code(pcb->regs);
+		run_user_code(currentRunningProcess->regs);
+		currentRunningProcess = NULL;
 	}
 }
