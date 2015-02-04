@@ -3,6 +3,7 @@
 #include "jval.h"
 #include "dllist.h"
 #include "syscall.h"
+#include "console_buf.h"
 
 #include <stdlib.h>
 
@@ -15,45 +16,66 @@ void SyscallReturn(PCB* pcb, int i) {
 }
 
 void ReadCall(PCB* pcb) {
-	if (pcb->regs[5] != 0) {
+	int syscall = pcb->regs[5];
+	int address = pcb->regs[6];
+	int count   = pcb->regs[7];
+
+	if (syscall != 0) {
 		SyscallReturn(pcb, -EBADF);
 	}
-	else if (pcb->regs[6] < 0) {
+	else if (address < 0) {
 		SyscallReturn(pcb, -EFAULT);
 	}
-	else if (pcb->regs[7] < 0) {
+	else if (count < 0) {
 		SyscallReturn(pcb, -EINVAL);
 	}
 	else {
+		int i, c;
+
 		P_kt_sem(readers);
-		//V_kt_sem(readers);
-		SyscallReturn(pcb, 0);
+		for (i = 0; i < count; i++){
+			P_kt_sem(nelem);
+			Jval jval = dll_first(console_read_buf)->val;
+			c = jval_i(jval);
+			dll_delete_node(dll_first(console_read_buf));
+			console_read_buf_length -= 1;
+
+			if(c == -1){
+				break; 
+			}
+
+			main_memory[address + i] = c;
+		}
 		V_kt_sem(readers);
+		SyscallReturn(pcb, i);
 	}
 }
 
 void WriteCall(PCB* pcb) {
-	if (pcb->regs[5] != 1 && pcb->regs[5] != 2) {
+	int syscall = pcb->regs[5];
+	int address = pcb->regs[6];
+	int count   = pcb->regs[7];
+
+	if (syscall != 1 && syscall != 2) {
 		SyscallReturn(pcb, -EBADF);
 	}
-	else if (pcb->regs[6] < 0 || pcb->regs[6] + pcb->regs[7] > MemorySize) {
+	else if (address < 0 || address + count > MemorySize) {
 		SyscallReturn(pcb, -EFAULT);
 	}
-	else if (pcb->regs[7] < 0) {
+	else if (count < 0) {
 		SyscallReturn(pcb, -EINVAL);
 	}
 	else {
-		int count = pcb->regs[7];
 		int i;
 		char c;
 
 		P_kt_sem(writers);
 		for (i=0; i < count; i++){
-			c = main_memory[pcb->regs[6]+i];
+			c = main_memory[address+i];
 			console_write(c);
 			P_kt_sem(writeok);
 		}
 		V_kt_sem(writers);
-		SyscallReturn(pcb, 1);
+		SyscallReturn(pcb, count);
 	}
 }

@@ -10,17 +10,23 @@
 #include "simulator.h"
 #include "dllist.h"
 #include "scheduler.h"
+#include "console_buf.h"
 #include "kt.h"
 #include "errno.h"
+
 
 typedef struct {
 	int regs[NumTotalRegs];
 } PCB;
 
 EXTERN Dllist readyq;
+EXTERN Dllist console_read_buf;
 EXTERN PCB* currentRunningProcess;
 EXTERN kt_sem writeok;
 EXTERN kt_sem writers;
 EXTERN kt_sem readers;
+EXTERN kt_sem consoleWait;
+EXTERN kt_sem nelem;
+EXTERN int console_read_buf_length;
 
 #endif

@@ -1,8 +1,8 @@
-//scheduler.c
 #include "scheduler.h"
 #include "kos.h"
 #include "jval.h"
 #include "dllist.h"
+#include "console_buf.h"
 
 #include <stdlib.h>
 

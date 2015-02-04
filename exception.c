@@ -12,6 +12,7 @@
 #include "kos.h"
 #include "scheduler.h"
 #include "syscall.h"
+#include "console_buf.h"
 
 #include <stdlib.h>
 
@@ -28,7 +29,7 @@ exceptionHandler(ExceptionType which)
 	r7 = buf[7];
 	newPC = buf[NextPCReg];
 
-	//printf("%d\n", type);
+	
 	/*
 	 * for system calls type is in r4, arg1 is in r5, arg2 is in r6, and
 	 * arg3 is in r7 put result in r2 and don't forget to increment the
@@ -51,6 +52,11 @@ exceptionHandler(ExceptionType which)
 			/* this is the _exit() system call */
 			DEBUG('e', "_exit() system call\n");
 			printf("Program exited with value %d.\n", r5);
+			//Dllist ptr = new_dllist();
+			//dll_traverse(ptr, console_read_buf){
+			//	printf("%c",ptr->val.c);
+			//}
+			//printf("\n");
 			SYSHalt();
 		case SYS_write:
 			kt_fork((void*(*)(void *))WriteCall, currentRunningProcess);
@@ -92,11 +98,10 @@ exceptionHandler(ExceptionType which)
 void
 interruptHandler(IntType which)
 {
-	// int buf[NumTotalRegs];
-	// int i;
 
 	switch (which) {
 	case ConsoleReadInt:
+		V_kt_sem(consoleWait);
 		DEBUG('e', "ConsoleReadInt interrupt\n");
 		break;
 	case ConsoleWriteInt:

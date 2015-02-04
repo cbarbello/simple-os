@@ -4,6 +4,7 @@
 #include "simulator.h"
 #include "dllist.h"
 #include "scheduler.h"
+#include "console_buf.h"
 
 #include <stdlib.h>
 
