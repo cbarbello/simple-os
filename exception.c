@@ -8,12 +8,18 @@
  * liability and disclaimer of warranty provisions.
  */
 
-#include "simulator.h"
+#include "simulator_lab2.h"
+#include "kos.h"
+#include "scheduler.h"
+#include "syscall.h"
+#include "console_buf.h"
+
+#include <stdlib.h>
 
 void
 exceptionHandler(ExceptionType which)
 {
-	int             type, r5, r6, r7, newPC;
+	int             i, type, r5, r6, r7, newPC;
 	int             buf[NumTotalRegs];
 
 	examine_registers(buf);
@@ -23,11 +29,16 @@ exceptionHandler(ExceptionType which)
 	r7 = buf[7];
 	newPC = buf[NextPCReg];
 
+	
 	/*
 	 * for system calls type is in r4, arg1 is in r5, arg2 is in r6, and
 	 * arg3 is in r7 put result in r2 and don't forget to increment the
 	 * pc before returning!
 	 */
+
+	for (i=0; i<NumTotalRegs; i++){
+		currentRunningProcess->regs[i] = buf[i];
+	}
 
 	switch (which) {
 	case SyscallException:
@@ -42,6 +53,34 @@ exceptionHandler(ExceptionType which)
 			DEBUG('e', "_exit() system call\n");
 			printf("Program exited with value %d.\n", r5);
 			SYSHalt();
+		case SYS_write:
+			kt_fork((void*(*)(void *))WriteCall, currentRunningProcess);
+		 	DEBUG('e', "SYS_write system call\n");
+		 	break;
+		case SYS_read:
+		 	kt_fork((void*(*)(void *))ReadCall, currentRunningProcess);
+		 	DEBUG('e', "SYS_read system call\n");
+		 	break;
+		case SYS_ioctl:
+			DEBUG('e', "ioctl system call\n");
+			kt_fork((void*(*)(void *))IoctlCall, currentRunningProcess);
+			break;
+		case SYS_fstat:
+			DEBUG('e', "fstat system call\n");
+			kt_fork((void*(*)(void *))FstatCall, currentRunningProcess);
+			break;
+		case SYS_getpagesize:
+			DEBUG('e', "getpagesize system call\n");
+			kt_fork((void*(*)(void *))GetPageSizeCall, currentRunningProcess);
+			break;
+		case SYS_sbrk:
+			DEBUG('e', "getpagesize system call\n");
+			kt_fork((void*(*)(void *))SbrkCall, currentRunningProcess);
+			break;
+		case SYS_execve:
+			DEBUG('e', "execve system call\n");
+			kt_fork((void*(*)(void *))ExecveCall, currentRunningProcess);
+			break;
 		default:
 			DEBUG('e', "Unknown system call\n");
 			SYSHalt();
@@ -67,24 +106,32 @@ exceptionHandler(ExceptionType which)
 		printf("Unexpected user mode exception %d %d\n", which, type);
 		exit(1);
 	}
-	noop();
+
+	Scheduler();
 }
 
 void
 interruptHandler(IntType which)
 {
+
 	switch (which) {
 	case ConsoleReadInt:
+		V_kt_sem(consoleWait);
 		DEBUG('e', "ConsoleReadInt interrupt\n");
-		noop();
 		break;
 	case ConsoleWriteInt:
+		V_kt_sem(writeok);
 		DEBUG('e', "ConsoleWriteInt interrupt\n");
-		noop();
 		break;
 	default:
 		DEBUG('e', "Unknown interrupt\n");
-		noop();
 		break;
 	}
+
+	if (currentRunningProcess != NULL) {
+		examine_registers(currentRunningProcess->regs);
+		dll_prepend(readyq, new_jval_v((void*)(currentRunningProcess)));
+	}
+
+	Scheduler();
 }
