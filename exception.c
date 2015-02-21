@@ -9,7 +9,7 @@
  */
 
 #include "simulator_lab2.h"
-#include "kos.h"
+//#include "kos.h"
 #include "scheduler.h"
 #include "syscall.h"
 #include "console_buf.h"

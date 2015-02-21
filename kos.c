@@ -7,10 +7,11 @@
 
 #define INIT_GLOBALS
 #include "simulator_lab2.h"
-#include "kos.h"
+//#include "kos.h"
 #include "console_buf.h"
 #include "errno.h"
 #include "kt.h"
+#include "scheduler.h"
 
 
 void initialize_user_process(char *argv[]) {

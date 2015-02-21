@@ -1,5 +1,5 @@
 #include "scheduler.h"
-#include "kos.h"
+//#include "kos.h"
 #include "jval.h"
 #include "dllist.h"
 #include "syscall.h"
